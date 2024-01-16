@@ -1,12 +1,11 @@
-package test
+package signal
 
 import (
-	"signal"
 	"testing"
 )
 
 func TestFlag(t *testing.T) {
-	f := signal.NewFlag()
+	f := NewFlag()
 	waiter := f.Subscribe()
 	f.Raise()
 	if !f.IsRaised() {

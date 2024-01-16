@@ -1,12 +1,11 @@
-package test
+package signal
 
 import (
-	"signal"
 	"testing"
 )
 
 func TestSignal(t *testing.T) {
-	s := signal.NewSignal(1)
+	s := NewSignal(1)
 	waiter := s.Subscribe()
 	s.Send()
 	select {
