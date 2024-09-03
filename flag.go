@@ -1,6 +1,7 @@
 package signal
 
 import (
+	"context"
 	"github.com/google/uuid"
 	"sync"
 )
@@ -15,36 +16,46 @@ func NewFlag() *Flag {
 	return &Flag{publisher: publisher{make(map[uuid.UUID]*Waiter)}}
 }
 
-func (sig *Flag) Subscribe() *Waiter {
-	sig.mu.Lock()
-	defer sig.mu.Unlock()
+func (fl *Flag) Subscribe() *Waiter {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+
 	waiter := &Waiter{ch: make(chan struct{}, 1)}
-	cancel := sig.subscribe(waiter)
+	cancel := fl.subscribe(waiter)
+
+	if fl.raised {
+		waiter.forceSend()
+	}
+
 	waiter.cancel = func() {
-		sig.mu.Lock()
-		defer sig.mu.Unlock()
+		fl.mu.Lock()
+		defer fl.mu.Unlock()
 		cancel()
 	}
+
 	return waiter
 }
 
-func (sig *Flag) Raise() {
-	sig.mu.Lock()
-	defer sig.mu.Unlock()
-	if sig.raised {
-		return
+func (fl *Flag) Raise(ctx context.Context) error {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+
+	if fl.raised {
+		return nil
 	}
-	sig.raised = true
-	sig.send()
+
+	fl.raised = true
+	return fl.send(ctx, true)
 }
 
-func (sig *Flag) Reset() {
-	sig.mu.Lock()
-	defer sig.mu.Unlock()
-	sig.raised = false
-	sig.purge()
+func (fl *Flag) Reset() {
+	fl.mu.Lock()
+	defer fl.mu.Unlock()
+
+	fl.raised = false
+	fl.purge()
 }
 
-func (sig *Flag) IsRaised() bool {
-	return sig.raised
+func (fl *Flag) IsRaised() bool {
+	return fl.raised
 }
