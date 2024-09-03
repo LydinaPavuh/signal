@@ -1,6 +1,7 @@
 package signal
 
 import (
+	"context"
 	"github.com/google/uuid"
 	"sync"
 )
@@ -12,13 +13,16 @@ type Signal struct {
 }
 
 func NewSignal(bufferSize int) *Signal {
-	return &Signal{publisher: publisher{make(map[uuid.UUID]*Waiter)}, bufferSize: bufferSize}
+	return &Signal{
+		publisher:  publisher{make(map[uuid.UUID]*Waiter)},
+		bufferSize: bufferSize,
+	}
 }
 
-func (sig *Signal) Send() {
+func (sig *Signal) Send(ctx context.Context, nowait bool) error {
 	sig.mu.Lock()
 	defer sig.mu.Unlock()
-	sig.send()
+	return sig.send(ctx, nowait)
 }
 
 func (sig *Signal) Purge() {
